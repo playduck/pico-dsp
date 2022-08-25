@@ -1,8 +1,8 @@
 ### USER ADDED
 
-./build
-./dist
-./.vscode
+build/
+dist/
+.vscode/
 
 ### AUTO GENERATED
 
