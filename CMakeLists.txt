@@ -24,16 +24,12 @@ add_executable(pico-dsp
 )
 
 target_sources(pico-dsp PRIVATE
-        # I2S-client.h
-        # I2S-client.cpp
         src/I2S.cpp
         src/I2S.h
         src/AudioRingBuffer.cpp
         src/AudioRingBuffer.h
         src/iir.cpp
         src/iir.h
-        # src/pio_i2s.pio.h
-        # src/pio_i2s.pio
         src/compatability.h
 )
 
