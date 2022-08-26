@@ -1,5 +1,9 @@
 # PICO-DSP
 
+<p align="center" style="background-color: white;">
+  <img src="./img/banner_800x300.png" style="max-height: 25vh;" title="pico dsp banner">
+</p>
+
 ## Functionality
 
 Audio DSP Project for the Raspberry Pi Pico (RP2040).
