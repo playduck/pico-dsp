@@ -1,23 +1,40 @@
 #include "iir.h"
-#include <math.h>
 
-void IIR::filter(float *s)
+int32_t accumulator = 0;
+
+void IIR::filter(int32_t *s)
 {
-    float out = b[0] * (*s) + d[0];
-    d[0] = b[1] * (*s) + a[1] * out + d[1];
-    d[1] = b[2] * (*s) + a[2] * out;
+    int64_t accumulator = (int64_t)state_error;
+
+    accumulator += (int64_t)b[0] * (int64_t)(*s);
+    accumulator += (int64_t)b[1] * (int64_t)x[1];
+    accumulator += (int64_t)b[2] * (int64_t)x[2];
+    accumulator -= (int64_t)a[1] * (int64_t)y[1];
+    accumulator -= (int64_t)a[2] * (int64_t)y[2];
+
+    // accumulator = CLAMP(accumulator, ACC_MAX, ACC_MIN);
+
+    state_error = accumulator & ACC_REM;
+    int32_t out = (int32_t)(accumulator >> (int64_t)(q));
+
+    x[2] = x[1];
+    y[2] = y[1];
+
+    x[1] = (*s);
+    y[1] = out;
+
     *s = out;
 }
 
 // https://www.earlevel.com/main/2011/01/02/biquad-formulas/
-IIR::IIR(filter_type_t _type, float Fc, float Q, float peakGain, float Fs)
+IIR::IIR(filter_type_t type, float Fc, float Q, float peakGain, float Fs)
 {
-    float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, b1 = 0.0f, b2 = 0.0f, norm = 0.0f;
+    float a0 = 0, a1 = 0, a2 = 0, b1 = 0, b2 = 0, norm = 0;
 
-    float V = powf(10.0f, fabsf(peakGain) / 20.0f);
+    float V = powf(10, fabsf(peakGain) / 20);
     float K = tanf(M_PI * Fc / Fs);
 
-    switch (_type)
+    switch (type)
     {
     case lowpass:
         norm = 1 / (1 + K / Q + K * K);
@@ -116,23 +133,34 @@ IIR::IIR(filter_type_t _type, float Fc, float Q, float peakGain, float Fs)
         }
         break;
     case none:
+        /* fall-through */
     default:
-        type = _type;
-        a0 = 0.0f;
-        a1 = 0.0f;
-        a2 = 0.0f;
-        b1 = 0.0f;
-        b2 = 0.0f;
+        type = none;
+        a0 = 1;
+        a1 = 0;
+        a2 = 0;
+        b1 = 0;
+        b2 = 0;
         break;
     }
 
-    type = _type;
-    b[0] = a0;
-    b[1] = a1;
-    b[2] = a2;
-    a[0] = 1.0f;
-    a[1] = -b1;
-    a[2] = -b2;
-    d[0] = 0.0f;
-    d[1] = 0.0f;
+    type = type;
+
+    b[0] = (int32_t)(a0 * scaleQ);
+    b[1] = (int32_t)(a1 * scaleQ);
+    b[2] = (int32_t)(a2 * scaleQ);
+
+    a[0] = 0;
+    a[1] = (int32_t)(b1 * scaleQ);
+    a[2] = (int32_t)(b2 * scaleQ);
+
+    x[0] = 0;
+    x[1] = 0;
+    x[2] = 0;
+
+    y[0] = 0;
+    y[1] = 0;
+    y[2] = 0;
+
+    state_error = 0;
 }

@@ -10,8 +10,9 @@ Audio DSP Project for the Raspberry Pi Pico (RP2040).
 The project reads an I2S input stream, performs signal processing and outputs it as an I2S stream.
 The pico acts as the I2S master generating all required clocks (including MCLK).
 
-DSP is done at 44.1kHz at 32 Bits.
-For optimal performance the RP2040 is overclocked to around 230 MHz and undervolted to 1.0V.
+DSP is done at 44.1kHz at 32 Bits fixed point.
+Fixed point is a hard requirement, as the RP2040 doesn't have an FPU.
+Running just one floating point IIR filter would require overclocking the core to 230MHz.
 
 ## Usage
 

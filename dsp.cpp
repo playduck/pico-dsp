@@ -36,19 +36,6 @@ volatile bool receiveFlag = false;
 
 mutex_t _pioMutex;
 
-inline float __not_in_flash_func(fixed_to_float)(int32_t *s)
-{
-    return (float)((float)(*s) / (float)INT32_MAX);
-}
-
-inline int32_t __not_in_flash_func(float_to_fixed)(float* s)
-{
-    // hard clipping
-    *s = CLAMP(*s, 1.0f, -1.0f);
-
-    return (int32_t)(roundf(*s * (float)INT32_MAX));
-}
-
 int __not_in_flash_func(main)()
 {
     stdio_init_all();
@@ -61,6 +48,11 @@ int __not_in_flash_func(main)()
     bi_decl(bi_1pin_with_name(output_DATA, "I2S Output (DAC) Data"));
     bi_decl(bi_1pin_with_name(mclk_pin, "I2S MCLK"));
 
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+
+
     // PIOs wait for IRQ7, so enable before loading
     irq_set_enabled(7, true);
 
@@ -70,8 +62,10 @@ int __not_in_flash_func(main)()
     sleep_ms(1000); // vreg settle
 
     // overclock system
-    set_sys_clock_khz(230000, true);
+    // set_sys_clock_khz(230000, true);
     sleep_ms(100);
+
+    gpio_put(PICO_DEFAULT_LED_PIN, 0);
 
     I2S I2S_Output(OUTPUT);
     I2S I2S_Input(INPUT);
@@ -125,9 +119,8 @@ int __not_in_flash_func(main)()
 
     printf("entering main loop\n");
 
-    int32_t lr = 0, rr = 0;
-    volatile int32_t lt = 0, rt = 0;
-    float p1, p2;
+    int32_t left_rx = 0, right_rx = 0;
+    int32_t left_tx = 0, right_tx = 0;
 
     // sync all pio0 clocks
     pio_enable_sm_mask_in_sync(pio0, 0xF);
@@ -136,22 +129,25 @@ int __not_in_flash_func(main)()
 
     while (1)
     {
-        I2S_Input.read32(&lr, &rr);
+        I2S_Input.read32(&left_rx, &right_rx);
 
-        p1 = fixed_to_float(&lr);
-        p2 = fixed_to_float(&rr);
+        // scale 24 Bit sample to range
+        left_tx = left_rx >> 8;
+        right_tx = right_rx >> 8;
 
-        lowpass1.filter(&p1);
-        lowpass2.filter(&p1);
-        shaping1.filter(&p1);
+        lowpass1.filter(&left_tx);
+        lowpass2.filter(&left_tx);
+        shaping1.filter(&left_tx);
 
-        highpass1.filter(&p2);
-        highpass2.filter(&p2);
+        highpass1.filter(&right_tx);
+        highpass2.filter(&right_tx);
 
-        lt = float_to_fixed(&p1);
-        rt = float_to_fixed(&p2);
+        // makeup gain
+        // should be 8, leave 1 bit headroom
+        left_tx <<= 7;
+        right_tx <<= 7;
 
-        I2S_Output.write32(lt,rt);
+        I2S_Output.write32(left_tx,right_tx);
     }
 
     return 0;
