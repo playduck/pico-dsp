@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <math.h>
+#include <stdint.h>
 
 #include "compatability.h"
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
+#include "pico/binary_info.h"
 
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
@@ -17,12 +19,17 @@
 
 #include "pio_i2s.pio.h"
 
-#define DEBUG_PIN 9
-
 #define CLAMP(x, max, min) (x > max ? max : (x < min ? min : x))
 
 const int sampleRate = 44100;
-const int bitdepth = 32;
+const int bitDepth = 32;
+const float mclkFactor = 512.0;
+
+const int input_BCLK_Base = 3;
+const int input_DATA = 5;
+const int output_BCLK_Base = 6;
+const int output_DATA = 8;
+const int mclk_pin = 15;
 
 bool ret;
 volatile bool receiveFlag = false;
@@ -46,7 +53,13 @@ int __not_in_flash_func(main)()
 {
     stdio_init_all();
 
-    printf("main entry\n");
+    // binary info
+    bi_decl(bi_program_description("pico-dsp - a simple audio dsp"));
+    bi_decl(bi_1pin_with_name(input_BCLK_Base, "I2S Input (ADC) BCLK, +1 is LRCK - DON'T USE (invalid timing)"));
+    bi_decl(bi_1pin_with_name(input_DATA, "I2S Input (ADC) Data"));
+    bi_decl(bi_1pin_with_name(output_BCLK_Base, "I2S Output (DAC) BCLK, +1 is LRCK"));
+    bi_decl(bi_1pin_with_name(output_DATA, "I2S Output (DAC) Data"));
+    bi_decl(bi_1pin_with_name(mclk_pin, "I2S MCLK"));
 
     // PIOs wait for IRQ7, so enable before loading
     irq_set_enabled(7, true);
@@ -75,24 +88,25 @@ int __not_in_flash_func(main)()
     PIO pio;
     PIOProgram* mclk = new PIOProgram(&pio_i2s_mclk_program);
     if(mclk->prepare(&pio, &sm, &off))  {
-        pio_i2s_mclk_program_init(pio, sm, off, 15);
-        pio_sm_set_clkdiv(pio, sm, (float)clock_get_hz(clk_sys) / ((float)sampleRate * 512.0));
-        // pio_sm_set_clkdiv_int_frac(pio, sm, 1, 10);
+        pio_i2s_mclk_program_init(pio, sm, off, mclk_pin);
+        // set mclk to a multiple of fs
+        pio_sm_set_clkdiv(pio, sm, (float)clock_get_hz(clk_sys) / (mclkFactor  * (float)sampleRate));
         printf("allocated MCLK PIO\n");
     }   else    {
         printf("failed to allocate MCLK PIO\n");
     }
 
-    I2S_Input.setBCLK(3);
-    I2S_Input.setDATA(5);
-    I2S_Output.setBCLK(6);
-    I2S_Output.setDATA(8);
+    I2S_Input.setBCLK(input_BCLK_Base);
+    I2S_Input.setDATA(input_DATA);
+    I2S_Output.setBCLK(output_BCLK_Base);
+    I2S_Output.setDATA(output_DATA);
 
-    I2S_Input.setBitsPerSample(32);
-    I2S_Output.setBitsPerSample(32);
+    I2S_Input.setBitsPerSample(bitDepth);
+    I2S_Output.setBitsPerSample(bitDepth);
 
-    I2S_Input.setBuffers(16, 32, 0);
-    I2S_Output.setBuffers(16, 32, 0);
+    // increase buffer sizes
+    I2S_Input.setBuffers(32, 64, 0);
+    I2S_Output.setBuffers(32, 64, 0);
 
     I2S_Input.setFrequency(sampleRate);
     I2S_Output.setFrequency(sampleRate);
