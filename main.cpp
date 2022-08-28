@@ -64,10 +64,10 @@ int __not_in_flash_func(main)()
     // set_sys_clock_khz(230000, true);
     // sleep_ms(100);
 
-    IIR lowpass1(lowpass,  880, BIQUAD_Q_ORDER_4_1, 0.0, sampleRate);
-    IIR lowpass2(lowpass,  880, BIQUAD_Q_ORDER_4_2,  0.0, sampleRate);
+    IIR lowpass1(lowpass,   880, BIQUAD_Q_ORDER_4_1, 0.0, sampleRate);
+    IIR lowpass2(lowpass,   880, BIQUAD_Q_ORDER_4_2, 0.0, sampleRate);
     IIR highpass1(highpass, 880, BIQUAD_Q_ORDER_4_1, 0.0, sampleRate);
-    IIR highpass2(highpass, 880, BIQUAD_Q_ORDER_4_2,  0.0, sampleRate);
+    IIR highpass2(highpass, 880, BIQUAD_Q_ORDER_4_2, 0.0, sampleRate);
 
     IIR shaping1(peak, 80, BIQUAD_Q_ORDER_2, 6.0, sampleRate);
 
