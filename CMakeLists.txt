@@ -20,7 +20,7 @@ pico_sdk_init()
 
 include_directories(src)
 add_executable(pico-dsp
-        dsp.cpp
+        main.cpp
 )
 
 target_sources(pico-dsp PRIVATE
