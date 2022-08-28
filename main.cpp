@@ -19,8 +19,6 @@
 
 #include "pio_i2s.pio.h"
 
-#define CLAMP(x, max, min) (x > max ? max : (x < min ? min : x))
-
 const int sampleRate = 44100;
 const int bitDepth = 32;
 const float mclkFactor = 512.0;
@@ -31,18 +29,17 @@ const int output_BCLK_Base = 6;
 const int output_DATA = 8;
 const int mclk_pin = 15;
 
-bool ret;
-volatile bool receiveFlag = false;
-
-mutex_t _pioMutex;
+mutex_t _pioMutex; /* external definition in comaptability.h */
 
 int __not_in_flash_func(main)()
 {
     /* binary info */
     bi_decl(bi_program_description("pico-dsp - a simple audio dsp"));
-    bi_decl(bi_1pin_with_name(input_BCLK_Base, "I2S Input (ADC) BCLK, +1 is LRCK - DON'T USE (invalid timing)"));
+    bi_decl(bi_1pin_with_name(input_BCLK_Base, "I2S Input (ADC) BCLK - DON'T USE (invalid timing)"));
+    bi_decl(bi_1pin_with_name(input_BCLK_Base + 1, "I2S Input (ADC) LRCK - DON'T USE (invalid timing)"));
     bi_decl(bi_1pin_with_name(input_DATA, "I2S Input (ADC) Data"));
-    bi_decl(bi_1pin_with_name(output_BCLK_Base, "I2S Output (DAC) BCLK, +1 is LRCK"));
+    bi_decl(bi_1pin_with_name(output_BCLK_Base, "I2S Output (DAC) BCLK"));
+    bi_decl(bi_1pin_with_name(output_BCLK_Base + 1, "I2S Output (DAC) LRCK"));
     bi_decl(bi_1pin_with_name(output_DATA, "I2S Output (DAC) Data"));
     bi_decl(bi_1pin_with_name(mclk_pin, "I2S MCLK"));
 
@@ -84,10 +81,10 @@ int __not_in_flash_func(main)()
     if(mclkPio->prepare(&pio, &sm, &off))  {
         pio_i2s_mclk_program_init(pio, sm, off, mclk_pin);
         // set mclk to a multiple of fs
-        pio_sm_set_clkdiv(pio, sm, (float)clock_get_hz(clk_sys) / (mclkFactor  * (float)sampleRate));
-        printf("allocated MCLK PIO\n");
+        float mclkFrequency = mclkFactor  * (float)sampleRate;
+        pio_sm_set_clkdiv(pio, sm, (float)clock_get_hz(clk_sys) / mclkFrequency);
     }   else    {
-        printf("failed to allocate MCLK PIO\n");
+        printf("failed to allocate MCLK PIO");
         while(1);
     }
 
@@ -123,12 +120,12 @@ int __not_in_flash_func(main)()
     int32_t left_rx = 0, right_rx = 0;
     int32_t left_tx = 0, right_tx = 0;
 
-    printf("entering main loop\n");
+    printf("entering main loop");
     gpio_put(PICO_DEFAULT_LED_PIN, 0);
 
-    /* sync all pio0 clocks */
+    /* synchronously start all pio0s and clocks */
     pio_enable_sm_mask_in_sync(pio0, 0xF);
-    /* start PIOs in sync using falling edge of IRQ7 */
+    /* run PIOs in sync using falling edge of IRQ7 */
     irq_set_enabled(7, false);
 
     while (1)

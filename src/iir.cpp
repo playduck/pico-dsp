@@ -1,7 +1,5 @@
 #include "iir.h"
 
-int32_t accumulator = 0;
-
 void IIR::filter(int32_t *s)
 {
     /*
