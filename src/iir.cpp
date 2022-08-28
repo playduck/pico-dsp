@@ -4,8 +4,15 @@ int32_t accumulator = 0;
 
 void IIR::filter(int32_t *s)
 {
+    /*
+        The state_error is the truncated part of the accumulator.
+        This acts as an error, which is fed back (without filter)
+        resulting in a rudimentary noise shaping feedback loop.
+        One could potentially add an LSB's worth of TPDF dither ontop.
+    */
     int64_t accumulator = (int64_t)state_error;
 
+    /* populate the accumulator, the explicit casts are required */
     accumulator += (int64_t)b[0] * (int64_t)(*s);
     accumulator += (int64_t)b[1] * (int64_t)x[1];
     accumulator += (int64_t)b[2] * (int64_t)x[2];
@@ -14,12 +21,15 @@ void IIR::filter(int32_t *s)
 
     // accumulator = CLAMP(accumulator, ACC_MAX, ACC_MIN);
 
+    /* truncate the result */
     state_error = accumulator & ACC_REM;
     int32_t out = (int32_t)(accumulator >> (int64_t)(q));
 
+    /* shift the delay lines */
     x[2] = x[1];
     y[2] = y[1];
 
+    /* populate the delay lines */
     x[1] = (*s);
     y[1] = out;
 
@@ -29,6 +39,12 @@ void IIR::filter(int32_t *s)
 // https://www.earlevel.com/main/2011/01/02/biquad-formulas/
 IIR::IIR(filter_type_t type, float Fc, float Q, float peakGain, float Fs)
 {
+    /*
+        calculate the iir filter coefficients based on more intuitively
+        understandable parameters
+        the coefficients get scaled by the selected scaling factor
+    */
+
     float a0 = 0, a1 = 0, a2 = 0, b1 = 0, b2 = 0, norm = 0;
 
     float V = powf(10, fabsf(peakGain) / 20);
