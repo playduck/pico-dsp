@@ -64,9 +64,6 @@ int __not_in_flash_func(main)()
     // set_sys_clock_khz(230000, true);
     // sleep_ms(100);
 
-    I2S I2S_Output(OUTPUT);
-    I2S I2S_Input(INPUT);
-
     IIR lowpass1(lowpass,  880, BIQUAD_Q_ORDER_4_1, 0.0, sampleRate);
     IIR lowpass2(lowpass,  880, BIQUAD_Q_ORDER_4_2,  0.0, sampleRate);
     IIR highpass1(highpass, 880, BIQUAD_Q_ORDER_4_1, 0.0, sampleRate);
@@ -89,20 +86,11 @@ int __not_in_flash_func(main)()
     }
 
     /* initilize I2S */
-    I2S_Input.setBCLK(input_BCLK_Base);
-    I2S_Input.setDATA(input_DATA);
-    I2S_Output.setBCLK(output_BCLK_Base);
-    I2S_Output.setDATA(output_DATA);
-
-    I2S_Input.setBitsPerSample(bitDepth);
-    I2S_Output.setBitsPerSample(bitDepth);
+    I2S I2S_Output(OUTPUT, output_BCLK_Base, output_DATA, bitDepth);
+    I2S I2S_Input(INPUT, input_BCLK_Base, input_DATA, bitDepth);
 
     I2S_Input.setFrequency(sampleRate);
     I2S_Output.setFrequency(sampleRate);
-
-    /* increase I2S buffer sizes */
-    I2S_Input.setBuffers(32, 64, 0);
-    I2S_Output.setBuffers(32, 64, 0);
 
     if (!I2S_Output.begin())
     {
@@ -130,7 +118,8 @@ int __not_in_flash_func(main)()
 
     while (1)
     {
-        I2S_Input.read32(&left_rx, &right_rx);
+        I2S_Input.read(&left_rx, true);
+        I2S_Input.read(&right_rx, true);
 
         /* scale 24 Bit sample to range */
         left_tx = left_rx >> 8;
@@ -149,7 +138,8 @@ int __not_in_flash_func(main)()
         left_tx <<= 7;
         right_tx <<= 7;
 
-        I2S_Output.write32(left_tx,right_tx);
+        I2S_Output.write(left_tx, true);
+        I2S_Output.write(right_tx, true);
     }
 
     return 0;

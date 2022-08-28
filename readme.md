@@ -67,12 +67,12 @@ Proceed to flash the pico with the generated `.elf`.
 
 ## TODO
 
-- hardware documentation
-- restructure Ringbuffer
-- Add more DSP functionality
-- Cleanup unused clock outputs (I2S PIO In)
-- try to optimize performance
-- more docs
+- [ ] hardware documentation
+- [ ] restructure Ringbuffer ?
+- [ ] Add more DSP functionality
+- [x] Cleanup unused clock outputs (I2S PIO In)
+- [x] try to optimize performance
+- [ ] more docs
 
 ## Further resources
 

@@ -24,55 +24,31 @@
 #include <vector>
 #include "AudioRingBuffer.h"
 
-class I2S : public Stream {
+class I2S{
 public:
-    I2S(PinMode direction = OUTPUT);
+    I2S(PinMode direction = OUTPUT, pin_size_t pinBCLK = 0, pin_size_t pinDOUT = 2, int bps = 32);
     virtual ~I2S();
 
-    bool setBCLK(pin_size_t pin);
-    bool setDATA(pin_size_t pin);
-    bool setBitsPerSample(int bps);
-    bool setBuffers(size_t buffers, size_t bufferWords, int32_t silenceSample = 0);
     bool setFrequency(int newFreq);
-
-    bool begin(long sampleRate) {
-        setFrequency(sampleRate);
-        return begin();
-    }
 
     bool begin();
     void end();
 
-    // from Stream
-    virtual int available() override;
-    virtual int read() override;
-    virtual int peek() override;
-    virtual void flush() override;
+    // // from Stream
+    // virtual int available() override;
+    // virtual int read() override;
+    // virtual int peek() override;
+    // virtual void flush() override;
 
-    // from Print (see notes on write() methods below)
-    virtual size_t write(const uint8_t *buffer, size_t size) override;
-    virtual int availableForWrite() override;
+    // // from Print (see notes on write() methods below)
+    // virtual size_t write(const uint8_t *buffer, size_t size) override;
+    // virtual int availableForWrite() override;
 
     // Try and make I2S::write() do what makes sense, namely write
     // one sample (L or R) at the I2S configured bit width
-    virtual size_t write(uint8_t s) override {
-        return _writeNatural(s & 0xff);
-    }
-    size_t write(int8_t s) {
-        return write((uint8_t)s);
-    }
-    size_t write(uint16_t s) {
-        return _writeNatural(s & 0xffff);
-    }
-    size_t write(int16_t s) {
-        return write((uint16_t)s);
-    }
-    size_t write(uint32_t s) {
-        return _writeNatural(s);
-    }
-    size_t write(int32_t s) {
-        return write((uint32_t)s);
-    }
+    // virtual size_t write(uint8_t s) override {
+    //     return _writeNatural(s & 0xff);
+    // }
 
     // Write 32 bit value to port, user responsbile for packing/alignment, etc.
     size_t write(int32_t val, bool sync);
@@ -85,12 +61,6 @@ public:
 
     // Read 32 bit value to port, user responsbile for packing/alignment, etc.
     size_t read(int32_t *val, bool sync);
-
-    // Read samples from I2S port, will block until data available
-    bool read8(int8_t *l, int8_t *r);
-    bool read16(int16_t *l, int16_t *r);
-    bool read24(int32_t *l, int32_t *r); // Note that 24b reads will be left-aligned (see above)
-    bool read32(int32_t *l, int32_t *r);
 
     // Note that these callback are called from **INTERRUPT CONTEXT** and hence
     // should be in RAM, not FLASH, and should be quick to execute.
