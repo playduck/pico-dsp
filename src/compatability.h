@@ -18,47 +18,6 @@
 
 typedef uint8_t pin_size_t;
 
-class Stream
-{
-public:
-    virtual int available() = 0;
-    virtual int read() = 0;
-    virtual int peek() = 0;
-
-    virtual int availableForWrite()
-    {
-        return 0;
-    }
-
-    virtual void flush() {}
-
-    virtual size_t write(uint8_t) = 0;
-    size_t write(const char *str)
-    {
-        if (str == NULL)
-            return 0;
-        return write((const uint8_t *)str, strlen(str));
-    }
-
-    size_t write(const char *buffer, size_t size)
-    {
-        return write((const uint8_t *)buffer, size);
-    }
-
-    virtual size_t write(const uint8_t *buffer, size_t size)
-    {
-        size_t n = 0;
-        while (size--)
-        {
-            if (write(*buffer++))
-                n++;
-            else
-                break;
-        }
-        return n;
-    }
-};
-
 class CoreMutex
 {
 public:
