@@ -74,6 +74,14 @@ Proceed to flash the pico with the generated `.elf`.
 - [x] try to optimize performance
 - [ ] more docs
 
+### Performance:
+
+IIR filters using a 64 Bit accumulator require around 2.2us but enables a scaling factor for fixed point arithmetic of 30 or more.
+Running 5 filters at this width limits Fs to around 48kHz.
+Limiting the IIR's accumulator to 32 Bits drastically increases performance to enabled an Fs of 96kHz.
+However the scaling factor must be reduced to 15 and samples must be reduced to a width of 16 Bits.
+32 Bit floating point IIR filters (in DF1) are borderline unusable unless overclocked to around 230MHz.
+
 ## Further resources
 
 - The great [earlevel engineering blog](https://www.earlevel.com/main/) is a great resource for IIR Filters and various DSP subjects.
