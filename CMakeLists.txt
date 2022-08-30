@@ -26,8 +26,8 @@ add_executable(pico-dsp
 target_sources(pico-dsp PRIVATE
         src/I2S.cpp
         src/I2S.h
-        src/AudioRingBuffer.cpp
-        src/AudioRingBuffer.h
+        src/AudioPioRingBuffer.cpp
+        src/AudioPioRingBuffer.h
         src/iir.cpp
         src/iir.h
         src/compatability.h
@@ -38,8 +38,8 @@ pico_generate_pio_header(pico-dsp ${CMAKE_CURRENT_LIST_DIR}/src/pio_i2s.pio)
 pico_set_program_name(pico-dsp "dsp")
 pico_set_program_version(pico-dsp "0.1")
 
-pico_enable_stdio_uart(pico-dsp 1)
-pico_enable_stdio_usb(pico-dsp 0)
+pico_enable_stdio_uart(pico-dsp 0)
+pico_enable_stdio_usb(pico-dsp 1)
 
 # Add the standard library to the build
 target_link_libraries(pico-dsp pico_stdlib)
@@ -48,6 +48,7 @@ target_link_libraries(pico-dsp pico_stdlib)
 target_link_libraries(pico-dsp
         hardware_pio
         hardware_dma
+        pico_runtime
         pico_audio_i2s
         pico_multicore
 )

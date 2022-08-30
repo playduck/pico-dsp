@@ -25,7 +25,7 @@
 #include "hardware/irq.h"
 #include "hardware/pio.h"
 #include "pio_i2s.pio.h"
-#include "AudioRingBuffer.h"
+#include "AudioPioRingBuffer.h"
 
 static int              __channelCount = 0;    // # of channels left.  When we hit 0, then remove our handler
 static AudioRingBuffer* __channelMap[12];      // Lets the IRQ handler figure out where to dispatch to
