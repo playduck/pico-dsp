@@ -43,7 +43,10 @@ int __not_in_flash_func(main)()
     bi_decl(bi_1pin_with_name(output_DATA, "I2S Output (DAC) Data"));
     bi_decl(bi_1pin_with_name(mclk_pin, "I2S MCLK"));
 
-    /* start uart */
+    /* start stdio
+        enables printf and friends
+        uses either uart or usb as defined by cmake
+    */
     stdio_init_all();
 
     /* on-board led */
@@ -53,7 +56,6 @@ int __not_in_flash_func(main)()
 
     /* PIOs wait for IRQ7, so enable before loading */
     irq_set_enabled(7, true);
-
 
     /* undervolt core voltage
         might enable higher clock speeds */
@@ -109,8 +111,7 @@ int __not_in_flash_func(main)()
     int32_t left_tx = 0, right_tx = 0;
 
     uint32_t counter = 0;
-    absolute_time_t start = 0;
-    absolute_time_t end = 0;
+    absolute_time_t start = 0, end = 0;
     int64_t diff = 0;
 
     printf("entering main loop");
@@ -128,7 +129,7 @@ int __not_in_flash_func(main)()
 
         start = get_absolute_time();
 
-        /* scale 24 Bit sample to range */
+        /* scale 24 bit sample to 32 bit range */
         left_tx = left_rx >> 8;
         right_tx = right_rx >> 8;
 
@@ -142,8 +143,8 @@ int __not_in_flash_func(main)()
         /* makeup gain
             +6dB max -> scale by 2^1
             headroom is 2^8 - 2^1 -> 2^7 */
-        left_tx <<= 6;
-        right_tx <<= 6;
+        left_tx <<= 7;
+        right_tx <<= 7;
 
         I2S_Output.write(left_tx, false);
         I2S_Output.write(right_tx, false);
@@ -152,7 +153,7 @@ int __not_in_flash_func(main)()
 
         diff = (absolute_time_diff_us(start, end));
         counter++;
-        if(counter % 48000 == 0) {
+        if(counter % sampleRate == 0) {
             printf("%lldus\n", diff);
         }
     }
