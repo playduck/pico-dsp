@@ -19,7 +19,7 @@
 
 #include "pio_i2s.pio.h"
 
-const int sampleRate = 44100;
+const int sampleRate = 48000;
 const int bitDepth = 32;
 const float mclkFactor = 512.0;
 
@@ -108,6 +108,11 @@ int __not_in_flash_func(main)()
     int32_t left_rx = 0, right_rx = 0;
     int32_t left_tx = 0, right_tx = 0;
 
+    uint32_t counter = 0;
+    absolute_time_t start = 0;
+    absolute_time_t end = 0;
+    int64_t diff = 0;
+
     printf("entering main loop");
     gpio_put(PICO_DEFAULT_LED_PIN, 0);
 
@@ -120,6 +125,8 @@ int __not_in_flash_func(main)()
     {
         I2S_Input.read(&left_rx, true);
         I2S_Input.read(&right_rx, true);
+
+        start = get_absolute_time();
 
         /* scale 24 Bit sample to range */
         left_tx = left_rx >> 8;
@@ -135,11 +142,19 @@ int __not_in_flash_func(main)()
         /* makeup gain
             +6dB max -> scale by 2^1
             headroom is 2^8 - 2^1 -> 2^7 */
-        left_tx <<= 7;
-        right_tx <<= 7;
+        left_tx <<= 6;
+        right_tx <<= 6;
 
-        I2S_Output.write(left_tx, true);
-        I2S_Output.write(right_tx, true);
+        I2S_Output.write(left_tx, false);
+        I2S_Output.write(right_tx, false);
+
+        end = get_absolute_time();
+
+        diff = (absolute_time_diff_us(start, end));
+        counter++;
+        if(counter % 48000 == 0) {
+            printf("%lldus\n", diff);
+        }
     }
 
     return 0;

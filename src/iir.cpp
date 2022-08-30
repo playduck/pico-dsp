@@ -14,10 +14,10 @@ void IIR::filter(int32_t *s)
     accumulator += (int64_t)b[0] * (int64_t)(*s);
     accumulator += (int64_t)b[1] * (int64_t)x[0];
     accumulator += (int64_t)b[2] * (int64_t)x[1];
-    accumulator -= (int64_t)a[0] * (int64_t)y[0];
-    accumulator -= (int64_t)a[1] * (int64_t)y[1];
+    accumulator += (int64_t)a[0] * (int64_t)y[0];
+    accumulator += (int64_t)a[1] * (int64_t)y[1];
 
-    accumulator = CLAMP(accumulator, ACC_MAX, ACC_MIN);
+    // accumulator = CLAMP(accumulator, ACC_MAX, ACC_MIN);
 
     /* truncate the result */
     state_error = accumulator & ACC_REM;
@@ -163,8 +163,8 @@ IIR::IIR(filter_type_t type, float Fc, float Q, float peakGain, float Fs)
     b[1] = (int32_t)(a1 * scaleQ);
     b[2] = (int32_t)(a2 * scaleQ);
 
-    a[0] = (int32_t)(b1 * scaleQ);
-    a[1] = (int32_t)(b2 * scaleQ);
+    a[0] = (int32_t)(-b1 * scaleQ);
+    a[1] = (int32_t)(-b2 * scaleQ);
 
     x[0] = 0;
     x[1] = 0;
